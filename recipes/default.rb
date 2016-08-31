@@ -8,7 +8,7 @@
 #
 # Apache script to check and start the service
 # Install Apache httpd
-package 'apache2' do 
+package 'Install Apache' do 
   package_name node['apache']['package']
   default_release node['apache']['default_release'] unless node['apache']['default_release'].nil?
 end
@@ -18,6 +18,7 @@ directory "#{node['apache']['dir']}/#{dir}" do
     owner 'root'
     group node['apache']['root_group']
   end
+  
  # Copy the mod-jk module
  cookbook_file '/usr/lib64/httpd/modules/mod_jk.so' do
   source 'mod_jk.so'
@@ -26,24 +27,29 @@ directory "#{node['apache']['dir']}/#{dir}" do
   mode '0755'
   action :create
 end
- # Copy the processed workers.properties file
- cookbook_file '/etc/httpd/conf/workers.properties' do
-  source 'workers.properties.jk2'
-  owner 'apache2'
-  group 'apache2'
-  mode '0755'
+
+# Copy worker.properties
+template '/etc/httpd/conf/workers.properties' do
   action :create
+  source 'workers.properties.erb'
+  owner 'root'
+  group node['apache']['root_group']
+  mode '0644'
+  notifies :reload, 'service[apache2]', :immediately
 end
- # Copy mod-jk file
- cookbook_file '/etc/httpd/conf.d/mod-jk.conf' do
-  source 'mod-jk.conf.jk2'
-  owner 'apache2'
-  group 'apache2'
-  mode '0755'
+
+# Copy mod-jk file
+ template ''/etc/httpd/conf.d/mod-jk.conf' do
   action :create
+  source 'mod-jk.conf.erb'
+  owner 'root'
+  group node['apache']['root_group']
+  mode '0644'
+  notifies :reload, 'service[apache2]', :immediately
 end
+
  
-  template 'httpd.conf' do
+ template 'httpd.conf' do
   if platform_family?('rhel', 'fedora', 'arch', 'freebsd')
     path "#{node['apache']['conf_dir']}/httpd.conf"
   elsif platform_family?('debian')
